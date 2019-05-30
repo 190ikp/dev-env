@@ -2,7 +2,8 @@
 set -euo pipefail
 
 DOCKER_COMPOSE_VER=1.23.1
-PHP_VER=7.2
+PHP_VER=7.3
+XDEBUG_VER=2.7.2
 
 setup_docker() {
     echo 'Installing Docker...'
@@ -32,6 +33,8 @@ setup_docker() {
 setup_php() {
     echo 'Setting up PHP...'
     echo 'Installing PHP...'
+    add-apt-repository -y ppa:ondrej/php
+    apt update
     apt install -y \
         php$PHP_VER \
         php$PHP_VER-common \
@@ -43,23 +46,22 @@ setup_php() {
         php$PHP_VER-zip
 
     echo 'Installing Xdebug...'
-    apt install -y php-xdebug
-    sed -i -e 's/zend_extension=xdebug.so/; zend_extension=xdebug.so/' /etc/php/7.2/mods-available/xdebug.ini
-    echo '@zend_extension = "/usr/lib/php/20170718/xdebug.so"@xdebug.remote_enable=on@xdebug.remote_autostart=on' |
+    pecl install xdebug-$XDEBUG_VER
+    echo '@zend_extension=xdebug.so@xdebug.remote_enable=on@xdebug.remote_autostart=on' |
         tr '@' '\n' >> /etc/php/$PHP_VER/cli/php.ini
 
     echo 'Installing Composer...'
     curl -sS https://getcomposer.org/installer | php
     mv composer.phar /usr/local/bin/composer
     chmod +x /usr/local/bin/composer
+
     php -v
     composer -v
     echo 'Done successfully!'
 }
 
 all() {
-    apt update
-    apt upgrade -y
+    apt update && apt upgrade -y
 
     setup_docker
 
